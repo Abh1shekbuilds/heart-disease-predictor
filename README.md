@@ -2,7 +2,7 @@
 
 A machine learning system that predicts the risk of heart disease from 11 routine clinical measurements, deployed as a live web app.
 
-### 🔗 [Try the live app](https://heart-disease-predictor-d54xjyoo4f9vyvxhgahntd.streamlit.app)
+### 🔗 [Try the live app](https://hdai-predictor.streamlit.app/)
 
 > ⚠️ Learning project only. Not a medical diagnostic tool.
 
