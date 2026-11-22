@@ -1,12 +1,46 @@
 import streamlit as st
 import pandas as pd
-import joblib
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.svm import SVC
 
 st.set_page_config(page_title="Heart Disease Risk Predictor", page_icon="❤️")
 
+
 @st.cache_resource
 def load_model():
-    return joblib.load("heart_model.pkl")
+    df = pd.read_csv("heart_disease_uci.csv")
+    df["target"] = (df["num"] > 0).astype(int)
+    df = df.drop(columns=["id", "dataset", "ca", "thal", "num"])
+    df["chol"] = df["chol"].replace(0, np.nan)
+    df["trestbps"] = df["trestbps"].replace(0, np.nan)
+
+    X = df.drop(columns=["target"])
+    y = df["target"]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y)
+
+    num_cols = ["age", "trestbps", "chol", "thalch", "oldpeak"]
+    cat_cols = ["sex", "cp", "fbs", "restecg", "exang", "slope"]
+
+    preprocess = ColumnTransformer([
+        ("num", Pipeline([("fill_blanks", SimpleImputer(strategy="median")),
+                          ("scale", StandardScaler())]), num_cols),
+        ("cat", Pipeline([("fill_blanks", SimpleImputer(strategy="most_frequent")),
+                          ("to_numbers", OneHotEncoder(handle_unknown="ignore"))]), cat_cols),
+    ])
+
+    model = Pipeline([
+        ("prep", preprocess),
+        ("clf", SVC(C=1, gamma=0.1, probability=True, random_state=42)),
+    ])
+    model.fit(X_train, y_train)
+    return model
+
 
 model = load_model()
 
@@ -34,17 +68,4 @@ with col2:
     slope = st.selectbox("ECG slope during exercise", ["upsloping", "flat", "downsloping"])
 
 if st.button("Predict", type="primary", use_container_width=True):
-    patient = pd.DataFrame([{
-        "age": age, "sex": sex, "cp": cp, "trestbps": trestbps, "chol": chol,
-        "fbs": fbs, "restecg": restecg, "thalch": thalch, "exang": exang,
-        "oldpeak": oldpeak, "slope": slope,
-    }])
-    risk = model.predict_proba(patient)[0, 1]
-
-    if risk >= 0.5:
-        st.error(f"Heart disease likely. Predicted risk: {risk*100:.1f}%")
-    else:
-        st.success(f"Heart disease unlikely. Predicted risk: {risk*100:.1f}%")
-    st.progress(float(risk))
-
-st.caption("Learning project only. Not a medical tool.")
+    patient
