@@ -68,4 +68,17 @@ with col2:
     slope = st.selectbox("ECG slope during exercise", ["upsloping", "flat", "downsloping"])
 
 if st.button("Predict", type="primary", use_container_width=True):
-    patient
+    patient = pd.DataFrame([{
+        "age": age, "sex": sex, "cp": cp, "trestbps": trestbps, "chol": chol,
+        "fbs": fbs, "restecg": restecg, "thalch": thalch, "exang": exang,
+        "oldpeak": oldpeak, "slope": slope,
+    }])
+    risk = model.predict_proba(patient)[0, 1]
+
+    if risk >= 0.5:
+        st.error(f"Heart disease likely. Predicted risk: {risk*100:.1f}%")
+    else:
+        st.success(f"Heart disease unlikely. Predicted risk: {risk*100:.1f}%")
+    st.progress(float(risk))
+
+st.caption("Learning project only. Not a medical tool.")
